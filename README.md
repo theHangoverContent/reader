@@ -2,6 +2,12 @@
 
 A simple, beautiful website that uses AI-powered speech synthesis to read text aloud.
 
+## 🚀 Try It Live
+
+**[Open AI Text Reader](https://theHangoverContent.github.io/reader/)**
+
+Click the link above to use the application directly in your browser - no installation required!
+
 ## Features
 
 - 🎯 **Simple Interface** - Clean, intuitive design for easy text input
