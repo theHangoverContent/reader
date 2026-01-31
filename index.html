@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Text Reader</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            padding: 40px;
+            max-width: 600px;
+            width: 100%;
+        }
+
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 10px;
+            font-size: 2.5em;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 0.9em;
+        }
+
+        textarea {
+            width: 100%;
+            min-height: 200px;
+            padding: 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 16px;
+            font-family: inherit;
+            resize: vertical;
+            transition: border-color 0.3s;
+        }
+
+        textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .controls {
+            margin-top: 20px;
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        button {
+            flex: 1;
+            min-width: 120px;
+            padding: 15px 30px;
+            font-size: 16px;
+            font-weight: bold;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s;
+            color: white;
+        }
+
+        .play-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+
+        .play-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .play-btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .pause-btn {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        }
+
+        .pause-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(245, 87, 108, 0.4);
+        }
+
+        .stop-btn {
+            background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+        }
+
+        .stop-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(250, 112, 154, 0.4);
+        }
+
+        .settings {
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 2px solid #e0e0e0;
+        }
+
+        .setting-group {
+            margin-bottom: 15px;
+        }
+
+        .setting-group label {
+            display: block;
+            margin-bottom: 5px;
+            color: #555;
+            font-weight: bold;
+        }
+
+        select, input[type="range"] {
+            width: 100%;
+            padding: 8px;
+            border: 2px solid #e0e0e0;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+
+        input[type="range"] {
+            padding: 0;
+        }
+
+        .range-value {
+            display: inline-block;
+            margin-left: 10px;
+            color: #667eea;
+            font-weight: bold;
+        }
+
+        .status {
+            margin-top: 15px;
+            padding: 10px;
+            border-radius: 5px;
+            text-align: center;
+            font-weight: bold;
+            display: none;
+        }
+
+        .status.active {
+            display: block;
+        }
+
+        .status.speaking {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .status.paused {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .status.stopped {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        @media (max-width: 600px) {
+            .container {
+                padding: 20px;
+            }
+
+            h1 {
+                font-size: 2em;
+            }
+
+            button {
+                min-width: 100px;
+                padding: 12px 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎙️ AI Text Reader</h1>
+        <p class="subtitle">Enter text below and let AI read it aloud</p>
+        
+        <textarea id="textInput" placeholder="Type or paste your text here...">Welcome to the AI Text Reader! This is a simple website that uses AI-powered speech synthesis to read text aloud. Try typing something and click the Play button to hear it.</textarea>
+        
+        <div class="controls">
+            <button class="play-btn" id="playBtn">▶️ Play</button>
+            <button class="pause-btn" id="pauseBtn">⏸️ Pause</button>
+            <button class="stop-btn" id="stopBtn">⏹️ Stop</button>
+        </div>
+
+        <div class="status" id="status"></div>
+
+        <div class="settings">
+            <div class="setting-group">
+                <label for="voiceSelect">Voice:</label>
+                <select id="voiceSelect"></select>
+            </div>
+
+            <div class="setting-group">
+                <label for="rateSlider">
+                    Speed: <span class="range-value" id="rateValue">1.0x</span>
+                </label>
+                <input type="range" id="rateSlider" min="0.5" max="2" step="0.1" value="1">
+            </div>
+
+            <div class="setting-group">
+                <label for="pitchSlider">
+                    Pitch: <span class="range-value" id="pitchValue">1.0</span>
+                </label>
+                <input type="range" id="pitchSlider" min="0.5" max="2" step="0.1" value="1">
+            </div>
+
+            <div class="setting-group">
+                <label for="volumeSlider">
+                    Volume: <span class="range-value" id="volumeValue">100%</span>
+                </label>
+                <input type="range" id="volumeSlider" min="0" max="1" step="0.1" value="1">
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Initialize speech synthesis
+        const synth = window.speechSynthesis;
+        let utterance = null;
+        let isPaused = false;
+
+        // Get DOM elements
+        const textInput = document.getElementById('textInput');
+        const playBtn = document.getElementById('playBtn');
+        const pauseBtn = document.getElementById('pauseBtn');
+        const stopBtn = document.getElementById('stopBtn');
+        const voiceSelect = document.getElementById('voiceSelect');
+        const rateSlider = document.getElementById('rateSlider');
+        const pitchSlider = document.getElementById('pitchSlider');
+        const volumeSlider = document.getElementById('volumeSlider');
+        const rateValue = document.getElementById('rateValue');
+        const pitchValue = document.getElementById('pitchValue');
+        const volumeValue = document.getElementById('volumeValue');
+        const status = document.getElementById('status');
+
+        // Load available voices
+        function loadVoices() {
+            const voices = synth.getVoices();
+            voiceSelect.innerHTML = '';
+            
+            voices.forEach((voice, index) => {
+                const option = document.createElement('option');
+                option.value = index;
+                option.textContent = `${voice.name} (${voice.lang})`;
+                if (voice.default) {
+                    option.selected = true;
+                }
+                voiceSelect.appendChild(option);
+            });
+        }
+
+        // Load voices on page load and when voices change
+        loadVoices();
+        if (speechSynthesis.onvoiceschanged !== undefined) {
+            speechSynthesis.onvoiceschanged = loadVoices;
+        }
+
+        // Update range value displays
+        rateSlider.addEventListener('input', () => {
+            rateValue.textContent = `${rateSlider.value}x`;
+        });
+
+        pitchSlider.addEventListener('input', () => {
+            pitchValue.textContent = pitchSlider.value;
+        });
+
+        volumeSlider.addEventListener('input', () => {
+            volumeValue.textContent = `${Math.round(volumeSlider.value * 100)}%`;
+        });
+
+        // Show status message
+        function showStatus(message, type) {
+            status.textContent = message;
+            status.className = `status active ${type}`;
+        }
+
+        // Hide status message
+        function hideStatus() {
+            status.className = 'status';
+        }
+
+        // Play button handler
+        playBtn.addEventListener('click', () => {
+            const text = textInput.value.trim();
+            
+            if (!text) {
+                alert('Please enter some text to read!');
+                return;
+            }
+
+            // If paused, resume
+            if (isPaused) {
+                synth.resume();
+                isPaused = false;
+                showStatus('▶️ Resumed', 'speaking');
+                return;
+            }
+
+            // Stop any ongoing speech
+            synth.cancel();
+
+            // Create new utterance
+            utterance = new SpeechSynthesisUtterance(text);
+            
+            // Set voice
+            const voices = synth.getVoices();
+            utterance.voice = voices[voiceSelect.value];
+            
+            // Set parameters
+            utterance.rate = parseFloat(rateSlider.value);
+            utterance.pitch = parseFloat(pitchSlider.value);
+            utterance.volume = parseFloat(volumeSlider.value);
+
+            // Event listeners
+            utterance.onstart = () => {
+                showStatus('🎙️ Speaking...', 'speaking');
+                playBtn.disabled = true;
+            };
+
+            utterance.onend = () => {
+                showStatus('✅ Finished', 'stopped');
+                playBtn.disabled = false;
+                setTimeout(hideStatus, 2000);
+            };
+
+            utterance.onerror = (event) => {
+                showStatus(`❌ Error: ${event.error}`, 'stopped');
+                playBtn.disabled = false;
+                setTimeout(hideStatus, 3000);
+            };
+
+            // Speak
+            synth.speak(utterance);
+        });
+
+        // Pause button handler
+        pauseBtn.addEventListener('click', () => {
+            if (synth.speaking && !isPaused) {
+                synth.pause();
+                isPaused = true;
+                showStatus('⏸️ Paused', 'paused');
+            }
+        });
+
+        // Stop button handler
+        stopBtn.addEventListener('click', () => {
+            synth.cancel();
+            isPaused = false;
+            playBtn.disabled = false;
+            showStatus('⏹️ Stopped', 'stopped');
+            setTimeout(hideStatus, 2000);
+        });
+
+        // Keyboard shortcuts
+        document.addEventListener('keydown', (e) => {
+            // Ctrl/Cmd + Enter to play
+            if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+                e.preventDefault();
+                playBtn.click();
+            }
+            // Escape to stop
+            if (e.key === 'Escape') {
+                stopBtn.click();
+            }
+        });
+    </script>
+</body>
+</html>
